@@ -1,0 +1,21 @@
+.board {
+  display: flex;
+  gap: 16px; /* Ajoute un peu d'espace entre les colonnes */
+}
+
+.column {
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 16px; /* Pour que le contenu ne touche pas les bords */
+}
+
+.card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer; /* Indique que la carte est interactive */
+}
+
+.card:hover {
+  transform: translateY(-2px); /* Soulève légèrement la carte */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15); /* Accentue l'ombre */
+}

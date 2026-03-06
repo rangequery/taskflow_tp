@@ -1,0 +1,5 @@
+.Sidebar{
+    width: 240px;
+border-right: 1px solid #e0e0e0;
+transition: margin-left 0.3s ease, opacity 0.3s ease;
+}
