@@ -69,3 +69,88 @@ Si on oublie le spread, on envoie seulement `{ name: newName }` au serveur. json
 **Q7 : Que fait `useParams()` ? Pourquoi c'est mieux que de passer l'id via props ?**
 
 `useParams()` extrait les paramètres dynamiques de l'URL (ici `:id` de `/projects/:id`). C'est mieux que les props car : l'URL est la source de vérité (on peut partager le lien), le composant est découplé de son parent, et le Back/Forward du navigateur fonctionne naturellement.
+
+---
+
+## Séance 4 — MUI vs Bootstrap & Architecture BDD
+
+### Réponses aux questions
+
+**Q1 : Combien de lignes de CSS avez-vous écrit pour le Header MUI ? Comparez avec votre Header.module.css.**
+
+Avec MUI : 0 ligne de CSS externe. Tout le style est en inline via la prop `sx={{}}` directement sur les composants MUI. Avec le Header CSS Modules, on avait environ 20 lignes de CSS dans `Header.module.css`. MUI élimine complètement le besoin de fichiers CSS séparés grâce à son système de style intégré.
+
+**Q2 : Comparez le code du Header MUI vs Bootstrap. Lequel est plus lisible ? Plus court ?**
+
+Bootstrap est légèrement plus court et plus lisible car il utilise des classes utilitaires simples (`className="ms-3 fw-bold"`). MUI est plus verbeux avec les objets `sx={{}}` mais offre plus de contrôle et de type-safety (TypeScript vérifie les propriétés). Bootstrap est plus familier pour les développeurs web classiques, MUI est plus "React-natif".
+
+**Q3 : Le Login MUI utilise sx={{}} pour le style. Le Login Bootstrap utilise des classes CSS (className). Quel système préférez-vous ? Pourquoi ?**
+
+Je préfère MUI avec `sx={{}}` car le style est co-localisé avec le composant — pas besoin de naviguer entre fichiers. De plus, on bénéficie de l'autocomplétion TypeScript pour les propriétés CSS. Cependant, Bootstrap avec les classes est plus rapide à prototyper et le code est plus compact.
+
+**Q4 : Si vous deviez choisir UNE seule library pour TaskFlow en production, laquelle et pourquoi ?**
+
+Je choisirais Material UI car : (1) le système de thème permet une personnalisation globale cohérente, (2) les composants sont plus complets (TextField avec labels flottants, Alert avec icônes), (3) le `sx` prop offre un contrôle fin sans fichiers CSS séparés, et (4) la documentation est très complète avec des exemples TypeScript.
+
+### Tableau comparatif
+
+| Critère | Material UI | React-Bootstrap |
+|---------|------------|----------------|
+| Installation | 4 packages (@mui/material, @emotion/react, @emotion/styled, @mui/icons-material) | 2 packages (react-bootstrap, bootstrap) |
+| Nombre de composants utilisés | 7 (AppBar, Toolbar, Typography, IconButton, Button, Box, TextField) | 6 (Navbar, Container, Button, Nav, Card, Form) |
+| Lignes de CSS écrites | 0 (tout en sx={{}}) | 0 (classes utilitaires Bootstrap) |
+| Système de style | sx={{}} (CSS-in-JS) | Classes CSS utilitaires (className) |
+| Personnalisation couleurs | Très flexible via sx et createTheme | Via variables CSS Bootstrap ou style inline |
+| Responsive | Grid + breakpoints dans sx | Grid Bootstrap + classes responsive |
+| Lisibilité du code | Verbeux mais explicite | Plus court et lisible |
+| Documentation | Excellente, avec exemples TS | Bonne, proche de Bootstrap classique |
+| Votre préférence | Pour les apps complexes | Pour le prototypage rapide |
+
+### Architecture Base de Données
+
+**Architecture actuelle de TaskFlow :**
+
+```
+React (Vite :5173) --HTTP (GET/POST/PUT/DELETE)--> json-server (:4000) --> db.json
+```
+
+**a) Avec Firebase :**
+```
+React (Vite :5173) --HTTPS (SDK Firebase)--> Firebase Cloud --> Firestore/Realtime DB
+```
+
+**b) Avec Express + MongoDB :**
+```
+React (Vite :5173) --HTTP--> Express API (:3000) --Mongoose--> MongoDB (:27017)
+```
+
+**Q5 : Pourquoi React ne peut-il PAS se connecter directement à MySQL ?**
+
+React s'exécute dans le navigateur (côté client). MySQL utilise un protocole TCP binaire qui nécessite un driver natif — impossible à exécuter dans un navigateur pour des raisons de sécurité. De plus, exposer la base de données directement au client exposerait les credentials de connexion et permettrait n'importe quelle requête SQL (injection, suppression de tables, etc.).
+
+**Q6 : json-server est parfait pour notre TP. Donnez 3 raisons pour lesquelles on ne l'utiliserait PAS en production.**
+
+1. **Pas d'authentification** : json-server ne vérifie pas les tokens JWT, n'importe qui peut faire des requêtes CRUD.
+2. **Pas de validation** : aucune validation des données envoyées — on peut envoyer n'importe quel JSON et il sera accepté.
+3. **Pas scalable** : les données sont stockées dans un fichier JSON, pas de gestion de concurrence, pas d'index, pas de relations complexes.
+
+**Q7 : Firebase permet à React de se connecter directement (pas de backend Express). Comment est-ce possible alors que MySQL ne le permet pas ?**
+
+Firebase expose une API REST/WebSocket accessible via HTTPS depuis le navigateur. Les règles de sécurité (Firebase Security Rules) sont définies côté serveur Firebase pour contrôler qui peut lire/écrire quoi. MySQL utilise un protocole TCP binaire non-web. Firebase agit comme un "backend-as-a-service" — le backend existe, mais Google le gère pour nous.
+
+**Q8 : Votre TaskFlow utilise json-server. Un client vous demande de passer en production. Quelles étapes ?**
+
+1. Remplacer json-server par un vrai backend (Express/NestJS + PostgreSQL/MongoDB)
+2. Implémenter une vraie authentification JWT avec hachage des mots de passe (bcrypt)
+3. Ajouter la validation des données (Joi, Zod)
+4. Configurer HTTPS et CORS
+5. Déployer le frontend (Vercel/Netlify) et le backend (AWS/Railway/Render)
+6. Ajouter des tests (unitaires + intégration)
+
+**Q9 : MUI et Bootstrap sont des libraries externes. Quel est le risque d'en dépendre ?**
+
+Le risque principal est la taille du bundle — MUI ajoute environ 80-100 KB gzippé et Bootstrap environ 25 KB. De plus, les breaking changes lors des mises à jour majeures (ex: MUI v4 → v5) nécessitent une migration coûteuse. Si la library est abandonnée, on se retrouve avec du code legacy difficile à maintenir.
+
+**Q10 : App de chat en temps réel — json-server, Firebase ou Backend custom ?**
+
+Firebase, car il offre nativement le temps réel via Firestore/Realtime Database — les messages sont synchronisés instantanément entre tous les clients via WebSocket sans code backend. json-server ne supporte pas le temps réel. Un backend custom (Express + Socket.io + MongoDB) serait possible mais demanderait beaucoup plus de développement.
