@@ -1,0 +1,6 @@
+.layout { display: flex; flex-direction: column; height: 100vh; }
+.loading { padding: 2rem; }
+.main { padding: 2rem; }
+.header { display: flex; gap: 1rem; margin-bottom: 1rem; align-items: center; }
+.dot { width: 16px; height: 16px; border-radius: 50%; }
+.info { color: gray; }

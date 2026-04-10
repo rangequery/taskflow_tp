@@ -35,3 +35,37 @@ Avec `useEffect`, le cycle est : Render → Commit → Paint → Effect. L'utili
 **Q10 : Pourquoi ne pas utiliser useLayoutEffect partout si c'est mieux ?**
 
 `useLayoutEffect` bloque le rendu visuel — le navigateur ne peut pas peindre tant que l'effect n'est pas terminé. Si l'effect est lourd (appel API, calcul complexe), l'utilisateur verra un freeze de l'interface. `useEffect` est préféré par défaut car il ne bloque pas le paint, ce qui donne une meilleure expérience utilisateur dans la majorité des cas.
+
+---
+
+## Séance 3 — React Router, Axios & CRUD
+
+### Réponses aux questions
+
+**Q1 : Que se passe-t-il si on tape /dashboard sans être connecté ? Pourquoi ?**
+
+On est redirigé automatiquement vers `/login`. C'est grâce au composant `ProtectedRoute` qui vérifie si `state.user` est null. Si l'utilisateur n'est pas connecté, il fait un `<Navigate to="/login">` avec le pathname actuel dans `state.from`, pour pouvoir y revenir après le login.
+
+**Q2 : Différence entre `<Link>` et `<NavLink>` ?**
+
+`<Link>` fait une navigation simple sans rechargement de page. `<NavLink>` fait la même chose mais ajoute automatiquement une classe CSS `active` (ou une classe personnalisée via `className`) quand le lien correspond à la route actuelle. C'est utile pour la sidebar pour mettre en surbrillance le projet sélectionné.
+
+**Q3 : Pourquoi api.get() au lieu de fetch() ?**
+
+Axios apporte plusieurs avantages par rapport à fetch : il transforme automatiquement le JSON (pas besoin de `.json()`), il gère mieux les erreurs (rejette les promesses pour les status >= 400), il supporte les intercepteurs pour ajouter des headers automatiquement (comme le token JWT), et il permet de configurer un `baseURL` et un `timeout` une seule fois.
+
+**Q4 : Le code `axios.isAxiosError(err)` sert à quoi ? Que se passe-t-il si le serveur est éteint ?**
+
+`axios.isAxiosError(err)` vérifie que l'erreur est bien une erreur Axios (et pas une autre erreur JS). Si le serveur est éteint, Axios lance une erreur réseau (`ERR_NETWORK`) — `err.response` est `undefined` dans ce cas car il n'y a pas de réponse HTTP du tout, mais l'erreur est quand même capturée dans le catch.
+
+**Q5 : Pourquoi `setProjects(prev => [...prev, data])` et pas `setProjects([...projects, data])` ?**
+
+La version avec callback (`prev => ...`) utilise toujours la valeur la plus récente du state. Si on utilise directement `projects`, on capture la valeur au moment du rendu, qui pourrait être périmée si plusieurs setState sont en attente. C'est une pratique recommandée quand le nouveau state dépend de l'ancien.
+
+**Q6 : On fait le PUT avec `{ ...project, name: newName }`. Que se passe-t-il si on oublie `...project` ?**
+
+Si on oublie le spread, on envoie seulement `{ name: newName }` au serveur. json-server va remplacer tout l'objet — on perd les autres propriétés comme `id` et `color`. Le projet se retrouverait sans couleur et potentiellement sans id dans la réponse.
+
+**Q7 : Que fait `useParams()` ? Pourquoi c'est mieux que de passer l'id via props ?**
+
+`useParams()` extrait les paramètres dynamiques de l'URL (ici `:id` de `/projects/:id`). C'est mieux que les props car : l'URL est la source de vérité (on peut partager le lien), le composant est découplé de son parent, et le Back/Forward du navigateur fonctionne naturellement.
