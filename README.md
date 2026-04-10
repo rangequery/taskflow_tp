@@ -154,3 +154,54 @@ Le risque principal est la taille du bundle — MUI ajoute environ 80-100 KB gzi
 **Q10 : App de chat en temps réel — json-server, Firebase ou Backend custom ?**
 
 Firebase, car il offre nativement le temps réel via Firestore/Realtime Database — les messages sont synchronisés instantanément entre tous les clients via WebSocket sans code backend. json-server ne supporte pas le temps réel. Un backend custom (Express + Socket.io + MongoDB) serait possible mais demanderait beaucoup plus de développement.
+
+---
+
+## Séance 5 — Sécurité JWT, Redux Toolkit & Performance
+
+### Réponses aux questions
+
+**Q1 : Le script s'exécute-t-il ? Pourquoi ? Que fait React avec les strings dans le JSX ?**
+
+Non, le script ne s'exécute pas. React échappe automatiquement toutes les strings insérées dans le JSX via `{}`. Le HTML malveillant `<img src=x onerror=alert("HACK")>` est affiché comme du texte brut, pas interprété comme du HTML. C'est la protection XSS native de React.
+
+**Q2 : Que se passe-t-il avec dangerouslySetInnerHTML ?**
+
+Avec `dangerouslySetInnerHTML`, React injecte le HTML tel quel dans le DOM sans l'échapper. L'image avec l'onerror s'exécute et l'alerte s'affiche — c'est une faille XSS. C'est pour ça que cette prop s'appelle "dangerously" : elle désactive la protection de React. Il ne faut JAMAIS l'utiliser avec des données provenant d'un utilisateur ou d'une API.
+
+**Q3 : Ouvrez Network (F12). Voyez-vous le header Authorization: Bearer ... ?**
+
+Oui, après login, chaque requête GET/POST/PUT/DELETE vers json-server contient le header `Authorization: Bearer <token>` grâce à l'intercepteur Axios configuré dans `setAuthToken()`. Le token est ajouté automatiquement via `api.defaults.headers.common['Authorization']`.
+
+**Q4 : Pourquoi stocker le token en mémoire (state React) et PAS dans localStorage ?**
+
+localStorage est accessible par TOUT script JavaScript de la page. En cas de faille XSS, un attaquant peut lire le token avec `localStorage.getItem('token')`. Le state React est isolé dans le composant — il n'est pas accessible depuis la console ou un script injecté. Le compromis est que le token est perdu au refresh, mais c'est plus sécurisé.
+
+**Q5 : Comparez authSlice.ts avec votre ancien authReducer.ts. Qu'est-ce qui a changé ?**
+
+1. **Plus de switch/case** : Redux Toolkit utilise des reducers nommés dans un objet `reducers: {}`.
+2. **Plus de string constants** : les action types sont générés automatiquement (ex: `auth/loginStart`).
+3. **Mutations "directes"** : on écrit `state.user = action.payload.user` au lieu de `return { ...state, user: ... }`. RTK utilise Immer en coulisse pour créer un nouvel objet immutable.
+4. **Export simplifié** : les action creators sont exportés automatiquement via `authSlice.actions`.
+
+**Q6 : Combien de composants se re-rendent quand on toggle la sidebar ? Lesquels ne DEVRAIENT PAS ?**
+
+Sans optimisation, Header, Sidebar ET MainContent se re-rendent tous quand on toggle la sidebar. Seul Sidebar devrait se re-rendre (car `isOpen` change). MainContent ne devrait PAS car ses props (`columns`) n'ont pas changé.
+
+**Q7 : Pourquoi MainContent ne se re-rend plus avec React.memo ? Que compare React.memo ?**
+
+`React.memo` effectue une comparaison superficielle (shallow comparison) des props. Si les props n'ont pas changé (même référence), le composant ne se re-rend pas. Comme `columns` est le même tableau en mémoire (pas re-créé), la comparaison retourne `true` et le re-render est évité.
+
+**Q8 : Quelle différence entre useMemo et useCallback ? Quand utiliser chacun ?**
+
+- `useMemo(() => computeValue(), [deps])` mémorise une **valeur** calculée.
+- `useCallback((args) => doSomething(), [deps])` mémorise une **fonction**.
+
+`useCallback(fn, deps)` est équivalent à `useMemo(() => fn, deps)`. On utilise `useCallback` pour les fonctions passées en props à des composants mémoisés (`React.memo`), et `useMemo` pour des calculs coûteux qu'on ne veut pas refaire à chaque render.
+
+**Q10 : Profiler — quels composants se re-rendent pour chaque action ?**
+
+a) **Toggle sidebar** : avec React.memo, seul Dashboard et Sidebar se re-rendent. MainContent est évité.
+b) **Ajouter un projet** : Dashboard, Sidebar et MainContent (car les données changent).
+c) **Naviguer vers ProjectDetail** : le routeur unmount Dashboard et mount ProjectDetail.
+d) **Se déconnecter** : tout est unmount, Login est monté.
