@@ -1,73 +1,37 @@
-# React + TypeScript + Vite
+# TaskFlow — Projet React Front-End
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Séance 2 — Auth Context & Protected Layout
 
-Currently, two official plugins are available:
+### Réponses aux questions
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+**Q2 : Pourquoi le useAuth() lance une erreur si le context est null ? Quel bug ça prévient ?**
 
-## React Compiler
+Si le context est null, cela signifie que le composant qui appelle `useAuth()` n'est pas enveloppé dans un `<AuthProvider>`. Lancer une erreur permet de détecter immédiatement ce problème au lieu d'avoir des bugs silencieux (comme des valeurs undefined) plus tard dans l'application.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+**Q3 : Sans Context, comment feriez-vous pour partager le user entre Header, Sidebar et Login ? Combien de props ?**
 
-## Expanding the ESLint configuration
+Sans Context, il faudrait passer le user et le dispatch via les props depuis App vers chaque composant enfant. On aurait besoin de passer au minimum 2 props (user + setUser ou dispatch) à travers chaque niveau : App → Header, App → Sidebar, App → Login. C'est le problème du "prop drilling" — si un composant intermédiaire ne consomme pas ces props, il les transmet quand même.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+**Q4 : Pourquoi e.preventDefault() est indispensable dans handleSubmit ?**
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Par défaut, un formulaire HTML recharge la page quand on le soumet. `e.preventDefault()` empêche ce comportement par défaut du navigateur, ce qui permet de gérer la soumission en JavaScript (appel API asynchrone) sans recharger la page et perdre tout le state React.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+**Q5 : Que fait la destructuration { password: _, ...user } ? Pourquoi exclure le password ?**
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+Cette syntaxe extrait la propriété `password` dans une variable `_` (qu'on ignore) et regroupe toutes les autres propriétés dans l'objet `user`. On exclut le password pour ne pas le stocker dans le state React — c'est une bonne pratique de sécurité, même si ici les mots de passe sont en clair dans json-server.
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+**Q6 : Pourquoi le Dashboard est un composant séparé et pas tout dans App ?**
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+Séparer Dashboard de App permet de respecter le principe de responsabilité unique. App gère la logique de routage (login vs dashboard), tandis que Dashboard gère l'affichage du tableau de bord. De plus, cela évite que les hooks comme `useEffect` et `useState` du Dashboard ne soient exécutés quand l'utilisateur n'est pas connecté.
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+**Q8 : onLogout est un CALLBACK. Dessinez le flux.**
+
+Le flux est : `Header` → l'utilisateur clique sur le bouton "Déconnexion" → `onClick` appelle `onLogout` → `onLogout` appelle `dispatch({ type: 'LOGOUT' })` → le reducer met `user` à `null` → le Context notifie `App` → `App` re-render → `authState.user` est null → `<Login />` est affiché à la place du Dashboard.
+
+**Q9 : Pourquoi le flash disparaît avec useLayoutEffect ?**
+
+Avec `useEffect`, le cycle est : Render → Commit → Paint → Effect. L'utilisateur voit d'abord la position (0,0) puis le repositionnement. Avec `useLayoutEffect`, le cycle est : Render → Commit → Effect → Paint. Le navigateur attend que l'effect ait fini avant de peindre, donc l'utilisateur ne voit jamais la position initiale (0,0).
+
+**Q10 : Pourquoi ne pas utiliser useLayoutEffect partout si c'est mieux ?**
+
+`useLayoutEffect` bloque le rendu visuel — le navigateur ne peut pas peindre tant que l'effect n'est pas terminé. Si l'effect est lourd (appel API, calcul complexe), l'utilisateur verra un freeze de l'interface. `useEffect` est préféré par défaut car il ne bloque pas le paint, ce qui donne une meilleure expérience utilisateur dans la majorité des cas.

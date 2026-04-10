@@ -1,7 +1,25 @@
 .header {
-  display: flex;
-  justify-content: space-between;
   height: 56px;
   background-color: #1B8C3E;
-  color: white;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
 }
+.left { display: flex; align-items: center; gap: 1rem; }
+.menuBtn {
+  background: none; border: none; color: #ffffff; font-size: 1.4rem;
+  cursor: pointer; padding: 0.25rem 0.5rem; transition: opacity 0.2s ease;
+}
+.menuBtn:hover { opacity: 0.8; }
+.logo { font-size: 1.1rem; font-weight: 600; margin: 0; }
+.right { display: flex; align-items: center; gap: 1rem; }
+.userName { font-size: 0.9rem; opacity: 0.9; }
+.logoutBtn {
+  background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);
+  color: white; padding: 0.4rem 0.8rem; border-radius: 6px; cursor: pointer;
+  font-size: 0.85rem; transition: background 0.2s;
+}
+.logoutBtn:hover { background: rgba(255,255,255,0.25); }

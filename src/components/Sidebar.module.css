@@ -1,5 +1,19 @@
-.Sidebar{
-    width: 240px;
-border-right: 1px solid #e0e0e0;
-transition: margin-left 0.3s ease, opacity 0.3s ease;
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  padding: 1.5rem 1rem;
+  box-sizing: border-box;
+  transition: margin-left 0.3s ease, opacity 0.3s ease;
 }
+.open { margin-left: 0; opacity: 1; }
+.closed { margin-left: -240px; opacity: 0; }
+.title { font-size: 1.2rem; font-weight: 600; margin-bottom: 1.5rem; color: #111827; }
+.list { list-style: none; padding: 0; margin: 0; }
+.item {
+  display: flex; align-items: center; gap: 0.6rem; padding: 0.6rem 0.4rem;
+  cursor: pointer; border-radius: 6px; transition: background-color 0.2s ease;
+}
+.item:hover { background-color: #f3f4f6; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
